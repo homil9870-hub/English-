@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>قاموسي الإنجليزي — الإصدار 3</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f7fb;color:#172033;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+header{background:#2563eb;color:#fff;padding:18px 15px;position:sticky;top:0;z-index:5}h1{font-size:21px;margin:0 0 4px}header p{margin:0;font-size:12px;opacity:.92}
+main{max-width:920px;margin:auto;padding:13px}.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:13px;box-shadow:0 3px 14px #0000000d}
+h2{font-size:18px;margin:0 0 10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+label{display:block;font-size:13px;font-weight:700;margin:7px 0 5px}input,textarea{width:100%;border:1px solid #d6ddea;border-radius:11px;padding:11px;font-size:16px;background:#fff}
+textarea{min-height:65px;resize:vertical}.btn{border:0;border-radius:11px;padding:9px 12px;font-size:14px;font-weight:700;cursor:pointer}.primary{background:#2563eb;color:#fff}.secondary{background:#eef3fb;color:#23324a}.danger{background:#fee2e2;color:#b91c1c}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.small{font-size:12px;color:#667085}.status{padding:9px;border-radius:10px;background:#f8fafc;margin-top:9px;white-space:pre-wrap}
+.item{border:1px solid #e2e7ef;border-radius:13px;padding:12px;margin:9px 0}.top{display:flex;align-items:center;justify-content:space-between;gap:8px}.word{font-size:19px;font-weight:800;direction:ltr;text-align:left}
+.meaning{margin:5px 0;color:#475467}.example{font-size:14px;color:#344054;direction:ltr;text-align:left;margin-top:7px}.source{font-size:11px;color:#98a2b3;margin-top:6px}
+.file{display:none}@media(max-width:600px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>📚 قاموسي الإنجليزي — الإصدار 3</h1><p>ترجمة تلقائية + اقتراح جمل + نطق + حفظ الكلمات على الجهاز</p></header>
+<main>
+<section class="card">
+<h2>➕ إضافة كلمة</h2>
+<div class="grid">
+<div><label>الكلمة الإنجليزية *</label><input id="word" placeholder="مثال: improve" dir="ltr"></div>
+<div><label>المعنى بالعربي</label><input id="meaning" placeholder="اتركه فارغًا للترجمة التلقائية"></div>
+</div>
+<label>مثال</label><textarea id="example" placeholder="سيحاول القاموس جلب مثال إنجليزي تلقائيًا" dir="ltr"></textarea>
+<div class="actions">
+<button class="btn primary" onclick="addWord()">➕ إضافة</button>
+<button class="btn secondary" onclick="autoFill()">✨ ترجمة واقتراح جملة</button>
+<button class="btn secondary" onclick="speak(document.getElementById('word').value)">🔊 نطق</button>
+</div>
+<div id="status" class="status hidden"></div>
+</section>
+
+<section class="card">
+<input id="search" placeholder="🔎 ابحث عن كلمة أو معنى..." oninput="render()">
+<div class="actions">
+<button class="btn secondary" onclick="speakSelected()">🔊 سماع أول نتيجة</button>
+<button class="btn secondary" onclick="exportData()">⬇️ نسخة احتياطية</button>
+<label class="btn secondary" style="cursor:pointer">⬆️ استرجاع
+<input class="file" type="file" accept=".json" onchange="importData(event)">
+</label>
+</div>
+<div id="count" class="small" style="margin-top:8px"></div>
+<div id="list"></div>
+</section>
+</main>
+
+<script>
+const KEY='my_english_dictionary_v3';
+const initialData=[{"word": "administer", "meaning": "يُدير / يعطي دواء", "example": ""}, {"word": "attention", "meaning": "انتباه", "example": ""}, {"word": "beep", "meaning": "صوت صفارة صغير", "example": ""}, {"word": "buzz", "meaning": "صوت طنين / ضجيج", "example": ""}, {"word": "career", "meaning": "وظيفة / مهنة", "example": ""}, {"word": "chaos", "meaning": "فوضى", "example": ""}, {"word": "chest", "meaning": "صدر", "example": ""}, {"word": "collapse", "meaning": "ينهار / انهيار", "example": ""}, {"word": "consciousness", "meaning": "وعي / ضمير", "example": ""}, {"word": "CPR (cardiopulmonary resuscitation)", "meaning": "إنعاش قلبي رئوي", "example": ""}, {"word": "emergency", "meaning": "طوارئ", "example": ""}, {"word": "grab", "meaning": "يمسك بقوة", "example": ""}, {"word": "heartbreaking", "meaning": "محزن / مفجع", "example": ""}, {"word": "kick off", "meaning": "انطلاق / يبدأ", "example": ""}, {"word": "medication", "meaning": "دواء", "example": ""}, {"word": "paramedic", "meaning": "مسعف", "example": ""}, {"word": "pulse", "meaning": "نبض", "example": ""}, {"word": "rewarding", "meaning": "مُجزٍ / مُرضٍ", "example": ""}, {"word": "rollercoaster", "meaning": "الأفعوانية / موقف متغير", "example": ""}, {"word": "shift", "meaning": "مناوبة عمل / يحوّل", "example": ""}, {"word": "victim", "meaning": "ضحية", "example": ""}, {"word": "activity", "meaning": "نشاط", "example": ""}, {"word": "affect", "meaning": "يؤثر على", "example": ""}, {"word": "alarm", "meaning": "إنذار / منبّه", "example": ""}, {"word": "anxiously", "meaning": "بشكل متوتر", "example": ""}, {"word": "arise", "meaning": "ينشأ", "example": ""}, {"word": "assist", "meaning": "يساعد", "example": ""}, {"word": "challenge", "meaning": "تحدٍّ / يتحدى", "example": ""}, {"word": "chart", "meaning": "مخطط / سجل", "example": ""}, {"word": "check", "meaning": "يتحقق", "example": ""}, {"word": "colleague", "meaning": "زميل عمل", "example": ""}, {"word": "compression", "meaning": "ضغط", "example": ""}, {"word": "complain", "meaning": "يشكو", "example": ""}, {"word": "condition", "meaning": "حالة / شرط", "example": ""}, {"word": "confusion", "meaning": "ارتباك", "example": ""}, {"word": "appointment", "meaning": "موعد", "example": ""}, {"word": "atmosphere", "meaning": "الغلاف الجوي / الجو العام", "example": ""}, {"word": "blood", "meaning": "دم", "example": ""}, {"word": "choking", "meaning": "اختناق", "example": ""}, {"word": "clinic", "meaning": "عيادة", "example": ""}, {"word": "coin", "meaning": "عملة معدنية", "example": ""}, {"word": "comment", "meaning": "تعليق", "example": ""}, {"word": "comfort", "meaning": "راحة / يريح", "example": ""}, {"word": "compassion", "meaning": "شفقة / رحمة", "example": ""}, {"word": "confident", "meaning": "واثق", "example": ""}, {"word": "construction", "meaning": "تشييد / بناء", "example": ""}, {"word": "cough", "meaning": "سعال / يسعل", "example": ""}, {"word": "crowded", "meaning": "مزدحم", "example": ""}, {"word": "culture", "meaning": "ثقافة", "example": ""}, {"word": "dedication", "meaning": "إخلاص / تفانٍ", "example": ""}, {"word": "director", "meaning": "مدير / مخرج", "example": ""}, {"word": "emotion", "meaning": "عاطفة", "example": ""}, {"word": "equipment", "meaning": "معدات", "example": ""}, {"word": "exhausted", "meaning": "مرهق", "example": ""}, {"word": "flexible", "meaning": "مرن", "example": ""}, {"word": "gratitude", "meaning": "امتنان / اعتراف بالجميل", "example": ""}, {"word": "hesitation", "meaning": "تردد", "example": ""}, {"word": "hurry", "meaning": "يسرع", "example": ""}, {"word": "ignore", "meaning": "يتجاهل", "example": ""}, {"word": "instructions", "meaning": "تعليمات", "example": ""}, {"word": "life-saving", "meaning": "منقذ للحياة", "example": ""}, {"word": "miserable", "meaning": "بائس", "example": ""}, {"word": "non-stop", "meaning": "بدون توقف", "example": ""}, {"word": "panicked", "meaning": "مذعور", "example": ""}, {"word": "passion", "meaning": "شغف", "example": ""}, {"word": "prescription", "meaning": "وصفة طبية", "example": ""}, {"word": "pressure", "meaning": "ضغط", "example": ""}, {"word": "relief", "meaning": "راحة / طمأنينة", "example": ""}, {"word": "remind", "meaning": "يذكّر", "example": ""}, {"word": "remove", "meaning": "يزيل", "example": ""}];
+let data=JSON.parse(localStorage.getItem(KEY)||'null') || initialData;
+
+function save(){localStorage.setItem(KEY,JSON.stringify(data));}
+function msg(t,show=true){const s=document.getElementById('status');s.textContent=t;s.classList.toggle('hidden',!show);}
+let englishVoice=null;
+function loadVoice(){
+  if(!('speechSynthesis' in window)) return;
+  const voices=speechSynthesis.getVoices();
+  englishVoice=voices.find(v=>/^en-US$/i.test(v.lang))
+    || voices.find(v=>/^en(-|_)/i.test(v.lang))
+    || voices.find(v=>/english/i.test(v.name))
+    || null;
+}
+if('speechSynthesis' in window){
+  loadVoice();
+  speechSynthesis.onvoiceschanged=loadVoice;
+}
+function speak(text){
+  text=(text||'').trim();
+  if(!text){alert('اكتب كلمة أولاً.');return;}
+  if(!('speechSynthesis' in window)){alert('النطق غير متاح في هذا المتصفح.');return;}
+  // Cancel anything currently speaking, then explicitly resume the engine.
+  speechSynthesis.cancel();
+  speechSynthesis.resume();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang=englishVoice ? englishVoice.lang : 'en-US';
+  if(englishVoice) u.voice=englishVoice;
+  u.rate=.78; u.pitch=1; u.volume=1;
+  u.onend=()=>{ try{speechSynthesis.cancel();}catch(e){} };
+  u.onerror=()=>{ try{speechSynthesis.resume();}catch(e){} };
+  // A tiny delay helps Chrome on Android after cancel().
+  setTimeout(()=>{ try{speechSynthesis.resume(); speechSynthesis.speak(u);}catch(e){} },80);
+}
+
+async function translateWord(word){
+  const url='https://api.mymemory.translated.net/get?q='+encodeURIComponent(word)+'&langpair=en|ar';
+  const r=await fetch(url); if(!r.ok)throw Error('translation');
+  const j=await r.json(); return j?.responseData?.translatedText || '';
+}
+async function getDictionary(word){
+  const clean=word.toLowerCase().replace(/[^a-z- ]/g,'').trim();
+  if(!clean)return null;
+  const r=await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(clean));
+  if(!r.ok)throw Error('dictionary');
+  const j=await r.json();
+  let example='';
+  let pos='';
+  for(const entry of j){for(const m of (entry.meanings||[])){
+    pos=pos||m.partOfSpeech||'';
+    for(const d of (m.definitions||[])){if(d.example){example=d.example;break;}}
+    if(example)break;
+  } if(example)break;}
+  return {example,pos};
+}
+async function autoFill(){
+  const w=document.getElementById('word').value.trim(); if(!w){alert('اكتب الكلمة أولاً.');return;}
+  msg('⏳ جاري جلب الترجمة واقتراح مثال...');
+  let tr='', ex='', pos='';
+  try{tr=await translateWord(w);}catch(e){}
+  try{const d=await getDictionary(w);if(d){ex=d.example||'';pos=d.pos||'';}}catch(e){}
+  if(tr)document.getElementById('meaning').value=tr;
+  if(ex)document.getElementById('example').value=ex;
+  if(tr||ex)msg('✅ تم تجهيز البيانات تلقائيًا. راجعها قبل الإضافة.');
+  else msg('⚠️ لم أستطع جلب البيانات الآن. اكتب المعنى/المثال يدويًا ثم أضف الكلمة.');
+}
+async function addWord(){
+  const w=document.getElementById('word').value.trim();let m=document.getElementById('meaning').value.trim();let e=document.getElementById('example').value.trim();
+  if(!w){alert('اكتب الكلمة أولاً.');return;}
+  if(!m){await autoFill();m=document.getElementById('meaning').value.trim();e=document.getElementById('example').value.trim();}
+  if(!m){alert('لم أستطع ترجمة الكلمة تلقائيًا. اكتب معناها ثم أعد المحاولة.');return;}
+  const old=data.find(x=>x.word.toLowerCase()===w.toLowerCase());
+  if(old){old.meaning=m;old.example=e;}else data.unshift({word:w,meaning:m,example:e});
+  save();render();speak(w);
+  document.getElementById('word').value='';document.getElementById('meaning').value='';document.getElementById('example').value='';
+  msg('✅ تمت إضافة الكلمة.');
+}
+async function refreshWord(i){
+  const w=data[i].word; document.getElementById('word').value=w; await autoFill();
+  const m=document.getElementById('meaning').value.trim(),e=document.getElementById('example').value.trim();
+  if(m)data[i].meaning=m;if(e)data[i].example=e;save();render();
+  document.getElementById('word').value='';document.getElementById('meaning').value='';document.getElementById('example').value='';
+}
+function editWord(i){
+  const x=data[i];const w=prompt('الكلمة الإنجليزية:',x.word);if(w===null)return;
+  const m=prompt('المعنى بالعربي:',x.meaning);if(m===null)return;const e=prompt('مثال:',x.example||'');if(e===null)return;
+  data[i]={word:w.trim(),meaning:m.trim(),example:e.trim()};save();render();
+}
+function removeWord(i){if(confirm('حذف هذه الكلمة؟')){data.splice(i,1);save();render();}}
+function render(){
+  const q=document.getElementById('search').value.trim().toLowerCase();
+  const found=data.map((x,i)=>({x,i})).filter(o=>o.x.word.toLowerCase().includes(q)||o.x.meaning.toLowerCase().includes(q)||o.x.example.toLowerCase().includes(q));
+  document.getElementById('count').textContent=`عرض ${found.length} من ${data.length} كلمة`;
+  document.getElementById('list').innerHTML=found.map(o=>`
+  <div class="item"><div class="top"><div class="word">${esc(o.x.word)}</div><button class="btn primary" data-speak-index="${o.i}" type="button">🔊 اسمع</button></div>
+  <div class="meaning">${esc(o.x.meaning)}</div>${o.x.example?`<div class="example">📝 ${esc(o.x.example)}</div>`:''}
+  <div class="actions"><button class="btn secondary" onclick="refreshWord(${o.i})">✨ تحديث تلقائي</button><button class="btn secondary" onclick="editWord(${o.i})">✏️ تعديل</button><button class="btn danger" onclick="removeWord(${o.i})">🗑️ حذف</button></div>
+  </div>`).join('')||'<p class="small">لا توجد نتائج.</p>';
+}
+function speakSelected(){const q=document.getElementById('search').value.trim().toLowerCase();const x=data.find(x=>!q||x.word.toLowerCase().includes(q)||x.meaning.toLowerCase().includes(q));if(x)speak(x.word);else alert('لا توجد كلمة.');}
+function exportData(){const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='my-english-dictionary-v3-backup.json';a.click();URL.revokeObjectURL(a.href);}
+function importData(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!Array.isArray(x))throw 0;data=x.filter(a=>a.word&&a.meaning);save();render();alert('تم الاسترجاع بنجاح.')}catch(e){alert('الملف غير صالح.')}};r.readAsText(f);ev.target.value='';}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+render();
+
+document.getElementById('list').addEventListener('click', function(ev){
+  const btn = ev.target.closest('[data-speak-index]');
+  if(!btn) return;
+  const i = Number(btn.getAttribute('data-speak-index'));
+  if(Number.isInteger(i) && data[i]) speak(data[i].word);
+});
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
